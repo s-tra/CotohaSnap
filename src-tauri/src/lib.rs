@@ -39,12 +39,15 @@ pub fn run() {
             commands::save_config,
             commands::set_enabled,
             commands::set_osc_enabled,
+            commands::get_version,
+            commands::open_about,
             commands::open_settings,
             commands::fetch_models,
             commands::get_history,
             commands::clear_history,
             commands::test_osc,
             commands::open_file,
+            commands::open_url,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri アプリの起動に失敗しました");

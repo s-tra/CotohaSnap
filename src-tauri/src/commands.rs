@@ -66,6 +66,30 @@ pub fn set_osc_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), 
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
+pub fn get_version(app: tauri::AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+#[tauri::command]
+pub async fn open_about(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("about") {
+        w.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "about",
+        tauri::WebviewUrl::App("about.html".into()),
+    )
+    .title("about - vrc-translator")
+    .inner_size(400.0, 300.0)
+    .resizable(false)
+    .build()
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("settings") {
         w.set_focus().map_err(|e| e.to_string())?;
@@ -76,7 +100,7 @@ pub async fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
         "settings",
         tauri::WebviewUrl::App("settings.html".into()),
     )
-    .title("設定 - VRC Translator")
+    .title("設定 - vrc-translator")
     .inner_size(580.0, 720.0)
     .resizable(true)
     .build()
@@ -126,13 +150,19 @@ pub fn clear_history(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
-// ファイルを OS のデフォルトアプリで開く
+// ファイル / URL を OS のデフォルトアプリで開く
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
 pub fn open_file(app: tauri::AppHandle, path: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
     app.opener().open_path(&path, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn open_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener().open_url(&url, None::<&str>).map_err(|e| e.to_string())
 }
 
 // ---------------------------------------------------------------------------

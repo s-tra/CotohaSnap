@@ -4,6 +4,7 @@ const { listen }  = window.__TAURI__.event;
 // ---------------------------------------------------------------------------
 // DOM 参照
 // ---------------------------------------------------------------------------
+const aboutBtn       = document.getElementById('about-btn');
 const toggleBtn      = document.getElementById('toggle-btn');
 const toggleLabel    = document.getElementById('toggle-label');
 const oscToggleBtn   = document.getElementById('osc-toggle-btn');
@@ -103,6 +104,17 @@ oscToggleBtn.addEventListener('click', async () => {
     setOscToggle(next);
   } catch (e) {
     showError(`OSC トグル失敗: ${e}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// About ウィンドウを開く
+// ---------------------------------------------------------------------------
+aboutBtn.addEventListener("click", async () => {
+  try {
+    await invoke("open_about");
+  } catch (e) {
+    showError("About 画面を開けませんでした: " + e);
   }
 });
 
