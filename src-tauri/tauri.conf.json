@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "vrc-translator",
-  "version": "0.1.0",
   "identifier": "com.vrc-translator.app",
   "build": {
     "frontendDist": "../src"

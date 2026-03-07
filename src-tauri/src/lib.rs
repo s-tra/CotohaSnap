@@ -8,6 +8,7 @@ pub mod translator;
 pub mod watcher;
 
 use state::AppState;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -26,6 +27,10 @@ pub fn run() {
         )
         .manage(AppState::new(cfg))
         .setup(|app| {
+            let version = app.package_info().version.to_string();
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_title(&format!("vrc-translator v{version}"));
+            }
             watcher::spawn_watcher(app.handle().clone());
             Ok(())
         })
