@@ -65,6 +65,9 @@ pub struct OscConfig {
     pub host: String,
     pub port: u16,
     pub address: String,
+    /// チャンク分割送信時の間隔（秒）。デフォルト 4 秒。
+    #[serde(default = "default_chunk_interval")]
+    pub chunk_interval_secs: u64,
 }
 
 /// カスタム（OpenAI 互換）プロバイダの設定
@@ -92,6 +95,7 @@ impl Default for OscConfig {
             host: "127.0.0.1".to_string(),
             port: 9000,
             address: "/chatbox/input".to_string(),
+            chunk_interval_secs: default_chunk_interval(),
         }
     }
 }
@@ -120,6 +124,7 @@ impl Default for Config {
 
 fn default_provider() -> String { "groq".to_string() }
 fn default_true() -> bool { true }
+fn default_chunk_interval() -> u64 { 4 }
 
 fn config_file_path() -> Result<PathBuf> {
     let dir = dirs::config_dir()

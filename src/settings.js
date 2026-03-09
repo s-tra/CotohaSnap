@@ -28,6 +28,7 @@ const oscHost           = document.getElementById('osc-host');
 const oscPort           = document.getElementById('osc-port');
 const oscAddress        = document.getElementById('osc-address');
 const testOscBtn        = document.getElementById('test-osc-btn');
+const oscChunkInterval  = document.getElementById('osc-chunk-interval');
 const oscPrefixChk      = document.getElementById('osc-prefix-enabled');
 const soundEnabledChk   = document.getElementById('sound-enabled');
 const prompt            = document.getElementById('prompt');
@@ -108,9 +109,10 @@ async function loadConfig() {
     oscPrefixChk.checked     = config.osc_prefix_enabled ?? false;
     soundEnabledChk.checked  = config.sound_enabled ?? true;
     watchDir.value           = config.watch_dir           ?? '';
-    oscHost.value            = config.osc?.host           ?? '127.0.0.1';
-    oscPort.value            = config.osc?.port           ?? 9000;
-    oscAddress.value         = config.osc?.address        ?? '/chatbox/input';
+    oscHost.value            = config.osc?.host                  ?? '127.0.0.1';
+    oscPort.value            = config.osc?.port                  ?? 9000;
+    oscAddress.value         = config.osc?.address               ?? '/chatbox/input';
+    oscChunkInterval.value   = config.osc?.chunk_interval_secs   ?? 4;
     prompt.value             = config.translation_prompt  ?? '';
 
     // currentProvider をダミー値にしてから providerSel を設定し onProviderChange を呼ぶ
@@ -145,9 +147,10 @@ function collectConfig() {
       models_url:   customModelsUrl.value.trim(),
     },
     osc: {
-      host:    oscHost.value,
-      port:    parseInt(oscPort.value, 10) || 9000,
-      address: oscAddress.value,
+      host:                oscHost.value,
+      port:                parseInt(oscPort.value, 10) || 9000,
+      address:             oscAddress.value,
+      chunk_interval_secs: parseInt(oscChunkInterval.value, 10) || 4,
     },
     watch_dir:          watchDir.value,
     translation_prompt: prompt.value,

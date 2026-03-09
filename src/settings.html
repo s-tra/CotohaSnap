@@ -46,6 +46,10 @@
           <span>アドレス</span>
           <input type="text" id="osc-address" class="input" placeholder="/chatbox/input">
         </label>
+        <label class="field field-sm">
+          <span>分割送信の間隔（秒）</span>
+          <input type="number" id="osc-chunk-interval" class="input" min="1" max="30" step="1">
+        </label>
         <label class="field-inline">
           <input type="checkbox" id="osc-prefix-enabled">
           <span>送信テキストの先頭に [翻訳結果] を付ける</span>

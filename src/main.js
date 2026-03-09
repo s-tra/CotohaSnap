@@ -13,6 +13,7 @@ const settingsBtn    = document.getElementById('settings-btn');
 const clearBtn       = document.getElementById('clear-btn');
 const logList        = document.getElementById('log-list');
 const errorBar       = document.getElementById('error-bar');
+const oscStatusBar   = document.getElementById('osc-status');
 
 // ---------------------------------------------------------------------------
 // VirtualList — 可変高アイテムの仮想スクロール
@@ -370,6 +371,21 @@ function resetPlaceholder() {
 // ---------------------------------------------------------------------------
 listen('translation_start', (event) => {
   showPlaceholder(event.payload);
+});
+
+let oscStatusTimer = null;
+
+listen('osc_chunk_progress', (event) => {
+  const { current, total } = event.payload;
+  oscStatusBar.textContent = `OSC送信中 (${current}/${total})`;
+  oscStatusBar.classList.remove('hidden');
+  if (oscStatusTimer) clearTimeout(oscStatusTimer);
+  if (current >= total) {
+    oscStatusTimer = setTimeout(() => {
+      oscStatusBar.classList.add('hidden');
+      oscStatusTimer = null;
+    }, 2000);
+  }
 });
 
 listen('translation_done', (event) => {

@@ -243,6 +243,16 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* OSC Status Bar */
+.osc-status {
+  padding: 5px 14px;
+  background: rgba(88,166,255,.12);
+  border-top: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
 /* Error Bar */
 .error-bar {
   padding: 8px 14px;

@@ -17,6 +17,16 @@ use crate::osc;
 use crate::state::AppState;
 
 // ---------------------------------------------------------------------------
+// 内部型
+// ---------------------------------------------------------------------------
+
+#[derive(serde::Serialize, Clone)]
+struct OscChunkProgress {
+    current: usize,
+    total: usize,
+}
+
+// ---------------------------------------------------------------------------
 // パブリック API
 // ---------------------------------------------------------------------------
 
@@ -153,9 +163,9 @@ async fn process_screenshot(
     state: &AppState,
     path: PathBuf,
 ) -> anyhow::Result<()> {
-    let (prompt, osc_config, osc_prefix_enabled) = {
+    let (prompt, osc_config, osc_prefix_enabled, chunk_interval_secs) = {
         let config = state.config.lock().expect("config lock poisoned");
-        (config.translation_prompt.clone(), config.osc.clone(), config.osc_prefix_enabled)
+        (config.translation_prompt.clone(), config.osc.clone(), config.osc_prefix_enabled, config.osc.chunk_interval_secs)
     };
     let osc_enabled = state.osc_enabled.load(Ordering::Relaxed);
     let translator = state.get_translator();
@@ -165,15 +175,6 @@ async fn process_screenshot(
     let translated_text = translator.translate(&path, &prompt).await?;
     tracing::info!("翻訳完了: {:?}", translated_text);
 
-    if osc_enabled {
-        let osc_text = if osc_prefix_enabled {
-            format!("[翻訳結果]\n{}", translated_text)
-        } else {
-            translated_text.clone()
-        };
-        osc::send_to_chatbox(&osc_config, &osc_text)?;
-    }
-
     // サムネイル生成（失敗してもエントリ自体は作成する）
     let thumbnail_path = crate::image_utils::generate_thumbnail(path.clone()).await
         .map_err(|e| tracing::warn!("サムネイル生成に失敗しました: {e}"))
@@ -182,13 +183,36 @@ async fn process_screenshot(
     let entry = TranslationEntry {
         timestamp: Utc::now(),
         image_path: path,
-        translated_text,
+        translated_text: translated_text.clone(),
         provider: translator.name().to_string(),
         model: translator.model_name().to_string(),
         thumbnail_path,
     };
     state.push_history(entry.clone());
+    // 翻訳完了をフロントに通知（OSC送信より先に行い、UIにすぐ全文を表示する）
     app_handle.emit("translation_done", &entry)?;
+
+    if osc_enabled {
+        let handle = app_handle.clone();
+        tokio::spawn(async move {
+            let chunks = osc::split_for_osc(&translated_text, osc_prefix_enabled);
+            let total = chunks.len();
+            for (i, chunk) in chunks.iter().enumerate() {
+                let current = i + 1;
+                if let Err(e) = osc::send_to_chatbox(&osc_config, chunk) {
+                    tracing::error!("OSC 送信エラー (チャンク {}/{}): {e}", current, total);
+                    let _ = handle.emit("watcher_error", e.to_string());
+                    return;
+                }
+                if total > 1 {
+                    let _ = handle.emit("osc_chunk_progress", OscChunkProgress { current, total });
+                }
+                if current < total {
+                    sleep(Duration::from_secs(chunk_interval_secs)).await;
+                }
+            }
+        });
+    }
 
     Ok(())
 }
