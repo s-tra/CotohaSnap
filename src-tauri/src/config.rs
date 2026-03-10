@@ -27,6 +27,8 @@ pub struct Config {
     pub sound_enabled: bool,
     #[serde(default)]
     pub is_enabled: bool,
+    #[serde(default = "default_font_size")]
+    pub font_size: u8,
     #[serde(default = "default_watch_dir")]
     pub watch_dir: PathBuf,
     #[serde(default = "default_prompt")]
@@ -112,6 +114,7 @@ impl Default for Config {
             osc_prefix_enabled: true,
             sound_enabled: true,
             is_enabled: false,
+            font_size: default_font_size(),
             watch_dir: default_watch_dir(),
             translation_prompt: default_prompt(),
         }
@@ -125,6 +128,7 @@ impl Default for Config {
 fn default_provider() -> String { "google".to_string() }
 fn default_true() -> bool { true }
 fn default_chunk_interval() -> u64 { 4 }
+fn default_font_size() -> u8 { 13 }
 
 fn config_file_path() -> Result<PathBuf> {
     let dir = dirs::config_dir()

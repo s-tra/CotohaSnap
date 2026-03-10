@@ -61,8 +61,9 @@ pub async fn load_and_prepare(path: &Path) -> Result<(Vec<u8>, &'static str)> {
 // サムネイルキャッシュの古いファイルを削除
 // ---------------------------------------------------------------------------
 
-/// 起動時に呼び出し、`days` 日以上アクセスされていないサムネイルを削除する。
-pub fn cleanup_old_thumbnails(days: u64) {
+/// 起動時に呼び出し、前回セッションのサムネイルを全削除する。
+/// 翻訳ログはメモリのみで永続化されないため、起動時点の既存サムネイルは全て孤児になる。
+pub fn clear_thumbnails() {
     let thumb_dir = match dirs::cache_dir() {
         Some(d) => d.join("vrc-translator").join("thumbnails"),
         None => return,
@@ -71,40 +72,9 @@ pub fn cleanup_old_thumbnails(days: u64) {
         return;
     }
 
-    let entries = match std::fs::read_dir(&thumb_dir) {
-        Ok(e) => e,
-        Err(e) => {
-            tracing::warn!("サムネイルディレクトリの読み取りに失敗: {e}");
-            return;
-        }
-    };
-
-    let threshold = std::time::Duration::from_secs(days * 24 * 60 * 60);
-    let mut deleted = 0u32;
-
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) != Some("jpg") {
-            continue;
-        }
-        let accessed = entry.metadata()
-            .and_then(|m| m.accessed().or_else(|_| m.modified()))
-            .and_then(|t| t.elapsed().map_err(|e| std::io::Error::other(e)));
-
-        match accessed {
-            Ok(age) if age > threshold => {
-                if let Err(e) = std::fs::remove_file(&path) {
-                    tracing::warn!("サムネイルの削除に失敗: {} ({e})", path.display());
-                } else {
-                    deleted += 1;
-                }
-            }
-            _ => {}
-        }
-    }
-
-    if deleted > 0 {
-        tracing::info!("古いサムネイルを {deleted} 件削除しました（{days} 日以上未アクセス）");
+    match std::fs::remove_dir_all(&thumb_dir) {
+        Ok(()) => tracing::info!("前回セッションのサムネイルを削除しました"),
+        Err(e) => tracing::warn!("サムネイルディレクトリの削除に失敗: {e}"),
     }
 }
 

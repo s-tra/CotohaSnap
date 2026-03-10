@@ -4,16 +4,19 @@ const { listen }  = window.__TAURI__.event;
 // ---------------------------------------------------------------------------
 // DOM 参照
 // ---------------------------------------------------------------------------
-const aboutBtn       = document.getElementById('about-btn');
-const toggleBtn      = document.getElementById('toggle-btn');
-const toggleLabel    = document.getElementById('toggle-label');
-const oscToggleBtn   = document.getElementById('osc-toggle-btn');
-const oscToggleLabel = document.getElementById('osc-toggle-label');
-const settingsBtn    = document.getElementById('settings-btn');
-const clearBtn       = document.getElementById('clear-btn');
-const logList        = document.getElementById('log-list');
-const errorBar       = document.getElementById('error-bar');
-const oscStatusBar   = document.getElementById('osc-status');
+const aboutBtn        = document.getElementById('about-btn');
+const toggleBtn       = document.getElementById('toggle-btn');
+const toggleLabel     = document.getElementById('toggle-label');
+const oscToggleBtn    = document.getElementById('osc-toggle-btn');
+const oscToggleLabel  = document.getElementById('osc-toggle-label');
+const settingsBtn     = document.getElementById('settings-btn');
+const clearBtn        = document.getElementById('clear-btn');
+const logList         = document.getElementById('log-list');
+const errorBar        = document.getElementById('error-bar');
+const oscStatusBar    = document.getElementById('osc-status');
+const fontDecreaseBtn = document.getElementById('font-decrease-btn');
+const fontIncreaseBtn = document.getElementById('font-increase-btn');
+const fontSizeValue   = document.getElementById('font-size-value');
 
 // ---------------------------------------------------------------------------
 // VirtualList — 可変高アイテムの仮想スクロール
@@ -179,6 +182,32 @@ const vlist = new VirtualList(logList, buildLogEntry);
 // ---------------------------------------------------------------------------
 // 初期状態の読み込み
 // ---------------------------------------------------------------------------
+const FONT_MIN = 10;
+const FONT_MAX = 20;
+let currentFontSize = 13;
+
+function applyFontSize(size) {
+  currentFontSize = Math.min(FONT_MAX, Math.max(FONT_MIN, size));
+  document.documentElement.style.setProperty('--font-size-base', currentFontSize + 'px');
+  fontSizeValue.textContent = currentFontSize;
+  fontDecreaseBtn.disabled = currentFontSize <= FONT_MIN;
+  fontIncreaseBtn.disabled = currentFontSize >= FONT_MAX;
+}
+
+fontDecreaseBtn.addEventListener('click', () => {
+  const next = currentFontSize - 1;
+  if (next < FONT_MIN) return;
+  applyFontSize(next);
+  invoke('set_font_size', { size: next }).catch(() => {});
+});
+
+fontIncreaseBtn.addEventListener('click', () => {
+  const next = currentFontSize + 1;
+  if (next > FONT_MAX) return;
+  applyFontSize(next);
+  invoke('set_font_size', { size: next }).catch(() => {});
+});
+
 async function init() {
   try {
     const config = await invoke('get_config');
@@ -186,6 +215,7 @@ async function init() {
     updateToggleUI();
     setOscToggle(config.osc_enabled ?? true);
     soundEnabled = config.sound_enabled ?? true;
+    applyFontSize(config.font_size ?? 13);
   } catch (e) {
     showError(`設定の読み込みに失敗しました: ${e}`);
   }
@@ -408,6 +438,7 @@ listen('config_saved', async () => {
     const config = await invoke('get_config');
     setOscToggle(config.osc_enabled ?? true);
     soundEnabled = config.sound_enabled ?? true;
+    applyFontSize(config.font_size ?? 13);
   } catch (_) {}
 });
 

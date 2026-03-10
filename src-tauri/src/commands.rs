@@ -61,6 +61,15 @@ pub fn set_osc_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), 
     Ok(())
 }
 
+#[tauri::command]
+pub fn set_font_size(state: State<'_, AppState>, size: u8) -> Result<(), String> {
+    let size = size.clamp(10, 20);
+    let mut cfg = state.config.lock().map_err(|e| e.to_string())?;
+    cfg.font_size = size;
+    config::save_config(&cfg).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // 設定ウィンドウを開く
 // ---------------------------------------------------------------------------

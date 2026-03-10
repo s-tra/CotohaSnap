@@ -37,7 +37,14 @@
     <!-- ログパネル -->
     <section class="log-panel">
       <div class="log-header">
-        <h2>翻訳ログ</h2>
+        <div class="log-header-left">
+          <div class="font-size-group">
+            <span class="font-size-label">文字サイズ</span>
+            <button class="btn-font" id="font-decrease-btn" title="フォントサイズを小さく">−</button>
+            <span class="font-size-value" id="font-size-value">13</span>
+            <button class="btn-font" id="font-increase-btn" title="フォントサイズを大きく">＋</button>
+          </div>
+        </div>
         <button class="btn btn-danger btn-sm" id="clear-btn">クリア</button>
       </div>
 

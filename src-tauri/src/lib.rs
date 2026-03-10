@@ -32,7 +32,7 @@ pub fn run() {
                 let _ = window.set_title(&format!("vrc-translator v{version}"));
             }
             // 1日以上アクセスされていないサムネイルを削除
-            image_utils::cleanup_old_thumbnails(1);
+            image_utils::clear_thumbnails();
             watcher::spawn_watcher(app.handle().clone());
             Ok(())
         })
@@ -50,6 +50,7 @@ pub fn run() {
             commands::test_osc,
             commands::open_file,
             commands::open_url,
+            commands::set_font_size,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri アプリの起動に失敗しました");
