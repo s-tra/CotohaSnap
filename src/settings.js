@@ -42,14 +42,8 @@ let currentOscEnabled = true;
 const providerModels = { anthropic: '', openai: '', groq: '', google: '', custom: '' };
 let currentProvider = 'anthropic';
 
-// プロバイダごとのデフォルトモデル（ヒント表示用）
-const DEFAULT_MODELS = {
-  anthropic: 'claude-haiku-4-5-20251001',
-  openai:    'gpt-4o',
-  groq:      'meta-llama/llama-4-scout-17b-16e-instruct',
-  google:    'gemini-2.5-flash',
-  custom:    '',
-};
+// プロバイダごとのデフォルトモデル（ヒント表示用）。バックエンドから起動時に取得する
+let DEFAULT_MODELS = {};
 
 // ---------------------------------------------------------------------------
 // プロバイダ切り替え
@@ -89,7 +83,11 @@ providerSel.addEventListener('change', onProviderChange);
 // ---------------------------------------------------------------------------
 async function loadConfig() {
   try {
-    const config = await invoke('get_config');
+    const [config, defaultModels] = await Promise.all([
+      invoke('get_config'),
+      invoke('get_default_models'),
+    ]);
+    DEFAULT_MODELS = defaultModels;
 
     // プロバイダごとのモデル値を先にロード
     providerModels.anthropic = config.models?.anthropic ?? '';
