@@ -92,13 +92,6 @@ class VirtualList {
   // アイテム i が占める垂直スペース（高さ + ギャップ）
   #h(i) { return (this.#heights[i] || this.#EST) + this.#GAP; }
 
-  // インデックス 0 からアイテム i の直前までの累積高さ
-  #cumTop(i) {
-    let t = 0;
-    for (let j = 0; j < i; j++) t += this.#h(j);
-    return t;
-  }
-
   #schedule() {
     if (this.#pending) return;
     this.#pending = true;
@@ -116,13 +109,16 @@ class VirtualList {
     const scrollTop = this.#container.scrollTop;
     const vh        = this.#container.clientHeight;
 
+    // 累積高さの配列を一度だけ計算 (O(n)) — スペーサー計算に再利用
+    const cum = new Array(n + 1);
+    cum[0] = 0;
+    for (let i = 0; i < n; i++) cum[i + 1] = cum[i] + this.#h(i);
+
     // ビューポートと交差するインデックス範囲を特定
-    let start = n, end = -1, acc = 0;
+    let start = n, end = -1;
     for (let i = 0; i < n; i++) {
-      const h = this.#h(i);
-      if (acc + h > scrollTop && start === n) start = i;
-      if (acc < scrollTop + vh) end = i;
-      acc += h;
+      if (cum[i + 1] > scrollTop && start === n) start = i;
+      if (cum[i] < scrollTop + vh) end = i;
     }
     if (end === -1) { start = 0; end = Math.min(n - 1, this.#BUF * 2); }
     start = Math.max(0, start - this.#BUF);
@@ -157,11 +153,9 @@ class VirtualList {
       if (h > 0) this.#heights[i] = h;
     }
 
-    // スペーサーの高さを更新
-    const topH = this.#cumTop(start);
-    const botH = Math.max(0, this.#cumTop(n) - this.#cumTop(end + 1) - this.#GAP);
-    this.#topPad.style.height = topH + 'px';
-    this.#botPad.style.height = botH + 'px';
+    // スペーサーの高さを更新（cum 配列を O(1) で参照）
+    this.#topPad.style.height = cum[start] + 'px';
+    this.#botPad.style.height = Math.max(0, cum[n] - cum[end + 1] - this.#GAP) + 'px';
   }
 }
 
@@ -440,6 +434,9 @@ listen('translation_cancelled', () => {
 
 listen('watcher_error', (event) => {
   resetPlaceholder();
+  if (oscStatusTimer) clearTimeout(oscStatusTimer);
+  oscStatusTimer = null;
+  oscStatusBar.classList.add('hidden');
   if (vlist.count === 0) showEmpty();
   showError(event.payload);
 });

@@ -23,6 +23,12 @@ pub fn save_config(
     state: State<'_, AppState>,
     mut new_config: Config,
 ) -> Result<(), String> {
+    // バリデーション
+    if new_config.osc.port == 0 {
+        return Err("OSC ポートには 1〜65535 の値を指定してください".to_string());
+    }
+    new_config.font_size = new_config.font_size.clamp(10, 20);
+
     // トグル状態はメインウィンドウが管理するため、現在の AtomicBool の値を保持する
     new_config.is_enabled = state.is_enabled.load(Ordering::Relaxed);
     new_config.osc_enabled = state.osc_enabled.load(Ordering::Relaxed);
@@ -270,7 +276,8 @@ async fn fetch_google_models(api_key: &str) -> Result<Vec<String>, String> {
         api_key
     );
     let client = reqwest::Client::new();
-    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    let resp = client.get(&url).send().await
+        .map_err(|_| "Google モデル取得に失敗しました".to_string())?;
 
     if !resp.status().is_success() {
         let body = resp.text().await.unwrap_or_default();

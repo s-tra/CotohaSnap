@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::Duration;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use base64::Engine as _;
@@ -7,6 +8,8 @@ use super::Translator;
 use crate::image_utils;
 
 const MAX_TOKENS: u32 = 1024;
+const REQUEST_TIMEOUT_SECS: u64 = 60;
+const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 // ---------------------------------------------------------------------------
 // リクエスト型（OpenAI 互換）
@@ -66,7 +69,17 @@ pub struct CustomTranslator {
 
 impl CustomTranslator {
     pub fn new(api_url: String, api_key: String, model: String, display_name: String) -> Self {
-        Self { api_url, api_key, model, display_name, client: reqwest::Client::new() }
+        Self {
+            api_url,
+            api_key,
+            model,
+            display_name,
+            client: reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
+                .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
+                .build()
+                .expect("reqwest::Client の構築に失敗しました"),
+        }
     }
 }
 

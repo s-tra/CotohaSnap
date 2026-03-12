@@ -116,7 +116,7 @@ impl Translator for GoogleTranslator {
             .json(&body)
             .send()
             .await
-            .context("Google Gemini API へのリクエストに失敗しました")?;
+            .map_err(|_| anyhow!("Google Gemini API へのリクエストに失敗しました"))?;
 
         let status = resp.status();
         if !status.is_success() {
