@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "vrc-translator",
-  "identifier": "com.vrc-translator.app",
+  "productName": "CotohaSnap",
+  "identifier": "com.cotoha-snap.app",
   "build": {
     "frontendDist": "../src"
   },
@@ -9,7 +9,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "VRC Translator",
+        "title": "CotohaSnap",
         "width": 800,
         "height": 600,
         "resizable": true,

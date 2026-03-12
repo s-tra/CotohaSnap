@@ -133,7 +133,7 @@ fn default_font_size() -> u8 { 13 }
 fn config_file_path() -> Result<PathBuf> {
     let dir = dirs::config_dir()
         .context("OS の設定ディレクトリが取得できませんでした")?
-        .join("vrc-translator");
+        .join("cotoha-snap");
     Ok(dir.join("config.toml"))
 }
 

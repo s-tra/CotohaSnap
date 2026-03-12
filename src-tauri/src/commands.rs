@@ -96,7 +96,7 @@ pub async fn open_about(app: tauri::AppHandle) -> Result<(), String> {
         "about",
         tauri::WebviewUrl::App("about.html".into()),
     )
-    .title("about - vrc-translator")
+    .title("about - CotohaSnap")
     .inner_size(400.0, 300.0)
     .resizable(false)
     .build()
@@ -115,7 +115,7 @@ pub async fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
         "settings",
         tauri::WebviewUrl::App("settings.html".into()),
     )
-    .title("設定 - vrc-translator")
+    .title("設定 - CotohaSnap")
     .inner_size(580.0, 720.0)
     .resizable(true)
     .build()
