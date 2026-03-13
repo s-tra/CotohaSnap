@@ -1,6 +1,6 @@
 use std::collections::HashMap;
+use std::net::UdpSocket;
 use std::path::PathBuf;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -119,7 +119,7 @@ async fn handle_event(
     event: Event,
     recently_processed: &mut HashMap<PathBuf, Instant>,
 ) {
-    if !state.is_enabled.load(Ordering::Relaxed) {
+    if !state.is_enabled() {
         tracing::debug!("翻訳 OFF のためスキップ: {:?}", event.kind);
         return;
     }
@@ -148,8 +148,9 @@ async fn handle_event(
 
         tracing::info!("PNG 検出: {}", path.display());
 
-        // ファイルの書き込みが完了するまで少し待つ
-        sleep(Duration::from_millis(200)).await;
+        // ファイルの書き込みが完了するまで待つ（設定値: file_ready_wait_ms）
+        let wait_ms = state.config.lock().expect("config lock poisoned").file_ready_wait_ms;
+        sleep(Duration::from_millis(wait_ms)).await;
 
         if let Err(e) = process_screenshot(app_handle, state, path).await {
             tracing::error!("翻訳パイプラインエラー: {e}");
@@ -163,11 +164,16 @@ async fn process_screenshot(
     state: &AppState,
     path: PathBuf,
 ) -> anyhow::Result<()> {
-    let (prompt, osc_config, osc_prefix_enabled, chunk_interval_secs) = {
+    let (prompt, osc_config, osc_prefix_enabled, chunk_interval_secs, osc_enabled) = {
         let config = state.config.lock().expect("config lock poisoned");
-        (config.translation_prompt.clone(), config.osc.clone(), config.osc_prefix_enabled, config.osc.chunk_interval_secs)
+        (
+            config.translation_prompt.clone(),
+            config.osc.clone(),
+            config.osc_prefix_enabled,
+            config.osc.chunk_interval_secs,
+            config.osc_enabled,
+        )
     };
-    let osc_enabled = state.osc_enabled.load(Ordering::Relaxed);
     let translator = state.get_translator();
 
     let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
@@ -220,11 +226,20 @@ async fn process_screenshot(
     if osc_enabled {
         let handle = app_handle.clone();
         tokio::spawn(async move {
+            // チャンク送信全体でソケットを使い回す
+            let socket = match UdpSocket::bind("0.0.0.0:0") {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!("UDP ソケットのバインドに失敗しました: {e}");
+                    let _ = handle.emit("watcher_error", e.to_string());
+                    return;
+                }
+            };
             let chunks = osc::split_for_osc(&translated_text, osc_prefix_enabled);
             let total = chunks.len();
             for (i, chunk) in chunks.iter().enumerate() {
                 let current = i + 1;
-                if let Err(e) = osc::send_to_chatbox(&osc_config, chunk) {
+                if let Err(e) = osc::send_to_chatbox(&osc_config, chunk, &socket) {
                     tracing::error!("OSC 送信エラー (チャンク {}/{}): {e}", current, total);
                     let _ = handle.emit("watcher_error", e.to_string());
                     return;

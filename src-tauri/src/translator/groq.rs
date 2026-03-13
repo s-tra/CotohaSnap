@@ -11,6 +11,7 @@ const REQUEST_TIMEOUT_SECS: u64 = 60;
 const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const API_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
+pub const MODELS_URL: &str = "https://api.groq.com/openai/v1/models";
 pub const DEFAULT_MODEL: &str = "meta-llama/llama-4-scout-17b-16e-instruct";
 const MAX_TOKENS: u32 = 1024;
 

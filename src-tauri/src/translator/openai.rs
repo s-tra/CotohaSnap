@@ -11,6 +11,7 @@ const REQUEST_TIMEOUT_SECS: u64 = 60;
 const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const API_URL: &str = "https://api.openai.com/v1/chat/completions";
+pub const MODELS_URL: &str = "https://api.openai.com/v1/models";
 pub const DEFAULT_MODEL: &str = "gpt-4o";
 const MAX_TOKENS: u32 = 1024;
 

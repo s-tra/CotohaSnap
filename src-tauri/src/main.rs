@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  cotoha_snap_lib::run();
+  kotoha_snap_lib::run();
 }

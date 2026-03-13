@@ -10,7 +10,8 @@ use crate::image_utils;
 const REQUEST_TIMEOUT_SECS: u64 = 60;
 const CONNECT_TIMEOUT_SECS: u64 = 10;
 
-const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models";
+pub const API_BASE: &str = "https://generativelanguage.googleapis.com/v1beta/models";
+pub const MODELS_URL: &str = "https://generativelanguage.googleapis.com/v1beta/models";
 pub const DEFAULT_MODEL: &str = "gemini-flash-latest";
 
 // ---------------------------------------------------------------------------

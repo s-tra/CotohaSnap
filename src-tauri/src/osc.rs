@@ -93,7 +93,9 @@ pub fn split_for_osc(text: &str, prefix_enabled: bool) -> Vec<String> {
 ///   引数     : [String(text), Bool(immediate), Bool(notification)]
 ///     - immediate   : true = キーボードアニメーションをスキップ
 ///     - notification: true = 通知音を鳴らす
-pub fn send_to_chatbox(config: &OscConfig, text: &str) -> Result<()> {
+///
+/// `socket` は呼び出し側で一度だけ bind してチャンク送信全体で使い回す。
+pub fn send_to_chatbox(config: &OscConfig, text: &str, socket: &UdpSocket) -> Result<()> {
     let packet = OscPacket::Message(OscMessage {
         addr: config.address.clone(),
         args: vec![
@@ -105,10 +107,6 @@ pub fn send_to_chatbox(config: &OscConfig, text: &str) -> Result<()> {
 
     let bytes = encoder::encode(&packet)
         .context("OSC パケットのエンコードに失敗しました")?;
-
-    // 送信元は OS に任せる（0.0.0.0:0）
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .context("UDP ソケットのバインドに失敗しました")?;
 
     let dest = format!("{}:{}", config.host, config.port);
     socket
@@ -122,5 +120,8 @@ pub fn send_to_chatbox(config: &OscConfig, text: &str) -> Result<()> {
 /// OSC 疎通確認用のテスト送信。
 /// `commands.rs` の `test_osc` コマンドから呼び出す。
 pub fn test_send(config: &OscConfig) -> Result<()> {
-    send_to_chatbox(config, "OSC test")
+    // テスト送信は1回だけなのでここでソケットを生成する
+    let socket = UdpSocket::bind("0.0.0.0:0")
+        .context("UDP ソケットのバインドに失敗しました")?;
+    send_to_chatbox(config, "OSC test", &socket)
 }

@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use tokio::sync::Notify;
@@ -17,8 +16,6 @@ const HISTORY_LIMIT: usize = 200;
 pub struct AppState {
     pub config: Mutex<Config>,
     pub translator: Mutex<Arc<dyn Translator>>,
-    pub is_enabled: AtomicBool,
-    pub osc_enabled: AtomicBool,
     pub history: Mutex<VecDeque<TranslationEntry>>,
     /// 設定変更時にウォッチャーへ再起動を通知する
     pub watcher_restart: Arc<Notify>,
@@ -29,17 +26,21 @@ pub struct AppState {
 impl AppState {
     pub fn new(config: Config) -> Self {
         let translator = translator::build_translator(&config);
-        let osc_enabled = config.osc_enabled;
-        let is_enabled = config.is_enabled;
         Self {
             translator: Mutex::new(translator),
-            is_enabled: AtomicBool::new(is_enabled),
-            osc_enabled: AtomicBool::new(osc_enabled),
             history: Mutex::new(VecDeque::with_capacity(HISTORY_LIMIT)),
             watcher_restart: Arc::new(Notify::new()),
             cancel_sender: Mutex::new(None),
             config: Mutex::new(config),
         }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.config.lock().expect("config lock poisoned").is_enabled
+    }
+
+    pub fn osc_enabled(&self) -> bool {
+        self.config.lock().expect("config lock poisoned").osc_enabled
     }
 
     pub fn get_translator(&self) -> Arc<dyn Translator> {
@@ -67,7 +68,6 @@ impl AppState {
     /// 設定を更新し、翻訳エンジンを差し替え、ウォッチャーに再起動を通知する。
     pub fn apply_config(&self, new_config: Config) {
         let new_translator = translator::build_translator(&new_config);
-        self.osc_enabled.store(new_config.osc_enabled, Ordering::Relaxed);
         {
             let mut t = self.translator.lock().expect("translator lock poisoned");
             *t = new_translator;

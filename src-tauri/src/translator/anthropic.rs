@@ -11,6 +11,7 @@ const REQUEST_TIMEOUT_SECS: u64 = 60;
 const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const API_URL: &str = "https://api.anthropic.com/v1/messages";
+pub const MODELS_URL: &str = "https://api.anthropic.com/v1/models";
 const API_VERSION: &str = "2023-06-01";
 pub const DEFAULT_MODEL: &str = "claude-haiku-4-5-20251001";
 const MAX_TOKENS: u32 = 1024;

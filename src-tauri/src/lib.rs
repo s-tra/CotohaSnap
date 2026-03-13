@@ -29,7 +29,7 @@ pub fn run() {
         .setup(|app| {
             let version = app.package_info().version.to_string();
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_title(&format!("CotohaSnap v{version}"));
+                let _ = window.set_title(&format!("KotohaSnap v{version}"));
             }
             // 1日以上アクセスされていないサムネイルを削除
             image_utils::clear_thumbnails();

@@ -1,4 +1,4 @@
-use std::sync::atomic::Ordering;
+use std::sync::OnceLock;
 use serde::Deserialize;
 use tauri::{Emitter, Manager, State};
 
@@ -29,9 +29,12 @@ pub fn save_config(
     }
     new_config.font_size = new_config.font_size.clamp(10, 20);
 
-    // トグル状態はメインウィンドウが管理するため、現在の AtomicBool の値を保持する
-    new_config.is_enabled = state.is_enabled.load(Ordering::Relaxed);
-    new_config.osc_enabled = state.osc_enabled.load(Ordering::Relaxed);
+    // トグル状態は設定画面のフォームに含まれないため、現在の実行時値を保持する
+    {
+        let current = state.config.lock().map_err(|e| e.to_string())?;
+        new_config.is_enabled = current.is_enabled;
+        new_config.osc_enabled = current.osc_enabled;
+    }
     config::save_config(&new_config).map_err(|e| e.to_string())?;
     state.apply_config(new_config);
     // 全ウィンドウに設定更新を通知
@@ -45,7 +48,6 @@ pub fn save_config(
 
 #[tauri::command]
 pub fn set_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
-    state.is_enabled.store(enabled, Ordering::Relaxed);
     {
         let mut cfg = state.config.lock().map_err(|e| e.to_string())?;
         cfg.is_enabled = enabled;
@@ -57,7 +59,6 @@ pub fn set_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), Stri
 
 #[tauri::command]
 pub fn set_osc_enabled(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
-    state.osc_enabled.store(enabled, Ordering::Relaxed);
     {
         let mut cfg = state.config.lock().map_err(|e| e.to_string())?;
         cfg.osc_enabled = enabled;
@@ -96,7 +97,7 @@ pub async fn open_about(app: tauri::AppHandle) -> Result<(), String> {
         "about",
         tauri::WebviewUrl::App("about.html".into()),
     )
-    .title("about - CotohaSnap")
+    .title("about - KotohaSnap")
     .inner_size(400.0, 300.0)
     .resizable(false)
     .build()
@@ -115,7 +116,7 @@ pub async fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
         "settings",
         tauri::WebviewUrl::App("settings.html".into()),
     )
-    .title("設定 - CotohaSnap")
+    .title("設定 - KotohaSnap")
     .inner_size(580.0, 720.0)
     .resizable(true)
     .build()
@@ -146,8 +147,8 @@ pub async fn fetch_models(
 ) -> Result<Vec<String>, String> {
     match provider.as_str() {
         "anthropic" => fetch_anthropic_models(&api_key).await,
-        "openai"    => fetch_openai_compat_models("https://api.openai.com/v1/models", &api_key).await,
-        "groq"      => fetch_openai_compat_models("https://api.groq.com/openai/v1/models", &api_key).await,
+        "openai"    => fetch_openai_compat_models(crate::translator::openai::MODELS_URL, &api_key).await,
+        "groq"      => fetch_openai_compat_models(crate::translator::groq::MODELS_URL, &api_key).await,
         "google"    => fetch_google_models(&api_key).await,
         "custom"    => {
             let url = models_url
@@ -221,6 +222,12 @@ pub fn test_osc(state: State<'_, AppState>) -> Result<(), String> {
 // モデル取得ヘルパー
 // ---------------------------------------------------------------------------
 
+/// モデル一覧取得専用の共有 HTTP クライアント（プロセス内でシングルトン）
+fn fetch_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(reqwest::Client::new)
+}
+
 #[derive(Deserialize)]
 struct ModelsResponse {
     data: Vec<ModelInfo>,
@@ -236,9 +243,9 @@ async fn fetch_anthropic_models(api_key: &str) -> Result<Vec<String>, String> {
     if api_key.is_empty() {
         return Err("API キーが入力されていません".to_string());
     }
-    let client = reqwest::Client::new();
+    let client = fetch_client();
     let resp = client
-        .get("https://api.anthropic.com/v1/models")
+        .get(crate::translator::anthropic::MODELS_URL)
         .header("x-api-key", api_key)
         .header("anthropic-version", "2023-06-01")
         .send()
@@ -271,12 +278,8 @@ async fn fetch_google_models(api_key: &str) -> Result<Vec<String>, String> {
         name: String,
     }
 
-    let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models?key={}",
-        api_key
-    );
-    let client = reqwest::Client::new();
-    let resp = client.get(&url).send().await
+    let url = format!("{}?key={}", crate::translator::google::MODELS_URL, api_key);
+    let resp = fetch_client().get(&url).send().await
         .map_err(|_| "Google モデル取得に失敗しました".to_string())?;
 
     if !resp.status().is_success() {
@@ -297,8 +300,7 @@ async fn fetch_google_models(api_key: &str) -> Result<Vec<String>, String> {
 
 /// OpenAI 互換モデル一覧（GET <url>）
 async fn fetch_openai_compat_models(url: &str, api_key: &str) -> Result<Vec<String>, String> {
-    let client = reqwest::Client::new();
-    let mut builder = client.get(url);
+    let mut builder = fetch_client().get(url);
     if !api_key.is_empty() {
         builder = builder.header("Authorization", format!("Bearer {}", api_key));
     }

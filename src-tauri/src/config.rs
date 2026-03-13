@@ -33,6 +33,9 @@ pub struct Config {
     pub watch_dir: PathBuf,
     #[serde(default = "default_prompt")]
     pub translation_prompt: String,
+    /// ファイル検出後、書き込み完了を待つ時間（ミリ秒）
+    #[serde(default = "default_file_ready_wait_ms")]
+    pub file_ready_wait_ms: u64,
 }
 
 /// プロバイダごとのモデル設定
@@ -117,6 +120,7 @@ impl Default for Config {
             font_size: default_font_size(),
             watch_dir: default_watch_dir(),
             translation_prompt: default_prompt(),
+            file_ready_wait_ms: default_file_ready_wait_ms(),
         }
     }
 }
@@ -129,11 +133,12 @@ fn default_provider() -> String { "groq".to_string() }
 fn default_true() -> bool { true }
 fn default_chunk_interval() -> u64 { 4 }
 fn default_font_size() -> u8 { 13 }
+fn default_file_ready_wait_ms() -> u64 { 200 }
 
 fn config_file_path() -> Result<PathBuf> {
     let dir = dirs::config_dir()
         .context("OS の設定ディレクトリが取得できませんでした")?
-        .join("cotoha-snap");
+        .join("kotoha-snap");
     Ok(dir.join("config.toml"))
 }
 

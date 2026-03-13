@@ -65,7 +65,7 @@ pub async fn load_and_prepare(path: &Path) -> Result<(Vec<u8>, &'static str)> {
 /// 翻訳ログはメモリのみで永続化されないため、起動時点の既存サムネイルは全て孤児になる。
 pub fn clear_thumbnails() {
     let thumb_dir = match dirs::cache_dir() {
-        Some(d) => d.join("cotoha-snap").join("thumbnails"),
+        Some(d) => d.join("kotoha-snap").join("thumbnails"),
         None => return,
     };
     if !thumb_dir.exists() {
@@ -83,11 +83,11 @@ pub fn clear_thumbnails() {
 // ---------------------------------------------------------------------------
 
 /// スクリーンショットから 160×120px 以内の JPEG サムネイルを生成してパスを返す。
-/// キャッシュ先: OS の cache_dir / cotoha-snap / thumbnails / <stem>.jpg
+/// キャッシュ先: OS の cache_dir / kotoha-snap / thumbnails / <stem>.jpg
 pub async fn generate_thumbnail(image_path: PathBuf) -> Result<PathBuf> {
     let thumb_dir = dirs::cache_dir()
         .context("OS のキャッシュディレクトリが取得できませんでした")?
-        .join("cotoha-snap")
+        .join("kotoha-snap")
         .join("thumbnails");
 
     std::fs::create_dir_all(&thumb_dir)
