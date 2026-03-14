@@ -206,6 +206,37 @@ pub fn cancel_translation(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// 設定リセット
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn reset_config(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Config, String> {
+    let default = Config::default();
+    config::save_config(&default).map_err(|e| e.to_string())?;
+    state.apply_config(default.clone());
+    let _ = app.emit("config_saved", ());
+    tracing::info!("設定をデフォルトにリセットしました");
+    Ok(default)
+}
+
+// ---------------------------------------------------------------------------
+// OSC キャンセル
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+pub fn cancel_osc(state: State<'_, AppState>) -> Result<(), String> {
+    let mut guard = state.osc_cancel_sender.lock().map_err(|e| e.to_string())?;
+    if let Some(tx) = guard.take() {
+        let _ = tx.send(());
+        tracing::info!("OSC 送信キャンセルをリクエストしました");
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // OSC テスト
 // ---------------------------------------------------------------------------
 
@@ -253,7 +284,7 @@ async fn fetch_anthropic_models(api_key: &str) -> Result<Vec<String>, String> {
         .map_err(|e| e.to_string())?;
 
     if !resp.status().is_success() {
-        let body = resp.text().await.unwrap_or_default();
+        let body = resp.text().await.unwrap_or_else(|e| format!("(レスポンス読み取りエラー: {e})"));
         return Err(format!("Anthropic モデル取得エラー: {}", body));
     }
 
@@ -283,7 +314,7 @@ async fn fetch_google_models(api_key: &str) -> Result<Vec<String>, String> {
         .map_err(|_| "Google モデル取得に失敗しました".to_string())?;
 
     if !resp.status().is_success() {
-        let body = resp.text().await.unwrap_or_default();
+        let body = resp.text().await.unwrap_or_else(|e| format!("(レスポンス読み取りエラー: {e})"));
         return Err(format!("Google モデル取得エラー: {}", body));
     }
 
@@ -307,7 +338,7 @@ async fn fetch_openai_compat_models(url: &str, api_key: &str) -> Result<Vec<Stri
 
     let resp = builder.send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
-        let body = resp.text().await.unwrap_or_default();
+        let body = resp.text().await.unwrap_or_else(|e| format!("(レスポンス読み取りエラー: {e})"));
         return Err(format!("モデル取得エラー: {}", body));
     }
 

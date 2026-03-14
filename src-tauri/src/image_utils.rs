@@ -9,8 +9,8 @@ const MAX_DIM: u32 = 1920;
 
 /// 画像ファイルを読み込み、API に送れる形に整えて (bytes, mime_type) で返す。
 ///
-/// - 5 MB 以下の PNG → そのまま返す
-/// - 5 MB 超 → 最大辺 1920px にリサイズして JPEG(q=85) で再エンコード
+/// - 2 MB 以下 → そのまま返す
+/// - 2 MB 超 → 最大辺 1920px にリサイズして JPEG(q=85) で再エンコード
 pub async fn load_and_prepare(path: &Path) -> Result<(Vec<u8>, &'static str)> {
     let raw = tokio::fs::read(path)
         .await

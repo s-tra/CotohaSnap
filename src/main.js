@@ -16,6 +16,8 @@ const errorBar        = document.getElementById('error-bar');
 const errorBarMsg     = document.getElementById('error-bar-msg');
 const errorBarClose   = document.getElementById('error-bar-close');
 const oscStatusBar    = document.getElementById('osc-status');
+const oscStatusText   = document.getElementById('osc-status-text');
+const oscCancelBtn    = document.getElementById('osc-cancel-btn');
 const fontDecreaseBtn = document.getElementById('font-decrease-btn');
 const fontIncreaseBtn = document.getElementById('font-increase-btn');
 const fontSizeValue   = document.getElementById('font-size-value');
@@ -408,15 +410,28 @@ let oscStatusTimer = null;
 
 listen('osc_chunk_progress', (event) => {
   const { current, total } = event.payload;
-  oscStatusBar.textContent = `OSC送信中 (${current}/${total})`;
+  oscStatusText.textContent = `OSC送信中 (${current}/${total})`;
+  oscCancelBtn.disabled = false;
   oscStatusBar.classList.remove('hidden');
   if (oscStatusTimer) clearTimeout(oscStatusTimer);
   if (current >= total) {
+    oscCancelBtn.disabled = true;
     oscStatusTimer = setTimeout(() => {
       oscStatusBar.classList.add('hidden');
       oscStatusTimer = null;
     }, 2000);
   }
+});
+
+listen('osc_cancelled', () => {
+  if (oscStatusTimer) clearTimeout(oscStatusTimer);
+  oscStatusTimer = null;
+  oscStatusBar.classList.add('hidden');
+});
+
+oscCancelBtn.addEventListener('click', async () => {
+  oscCancelBtn.disabled = true;
+  try { await invoke('cancel_osc'); } catch (_) {}
 });
 
 listen('translation_done', (event) => {
@@ -445,6 +460,8 @@ listen('config_saved', async () => {
   hideError();
   try {
     const config = await invoke('get_config');
+    isEnabled = config.is_enabled ?? true;
+    updateToggleUI();
     setOscToggle(config.osc_enabled ?? true);
     soundEnabled = config.sound_enabled ?? true;
     applyFontSize(config.font_size ?? 13);

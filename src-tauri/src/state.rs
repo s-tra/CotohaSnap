@@ -21,6 +21,8 @@ pub struct AppState {
     pub watcher_restart: Arc<Notify>,
     /// 進行中の翻訳をキャンセルするための oneshot Sender
     pub cancel_sender: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
+    /// 進行中の OSC チャンク送信をキャンセルするための oneshot Sender
+    pub osc_cancel_sender: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 impl AppState {
@@ -31,6 +33,7 @@ impl AppState {
             history: Mutex::new(VecDeque::with_capacity(HISTORY_LIMIT)),
             watcher_restart: Arc::new(Notify::new()),
             cancel_sender: Mutex::new(None),
+            osc_cancel_sender: Mutex::new(None),
             config: Mutex::new(config),
         }
     }

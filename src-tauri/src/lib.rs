@@ -53,6 +53,8 @@ pub fn run() {
             commands::open_file,
             commands::open_url,
             commands::set_font_size,
+            commands::reset_config,
+            commands::cancel_osc,
         ])
         .run(tauri::generate_context!())
         .expect("Tauri アプリの起動に失敗しました");

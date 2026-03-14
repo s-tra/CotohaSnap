@@ -34,6 +34,7 @@ const soundEnabledChk   = document.getElementById('sound-enabled');
 const prompt            = document.getElementById('prompt');
 const saveBtn           = document.getElementById('save-btn');
 const saveStatus        = document.getElementById('save-status');
+const resetConfigBtn    = document.getElementById('reset-config-btn');
 
 // 設定保存時に osc_enabled を保持するための変数
 let currentOscEnabled = true;
@@ -248,6 +249,28 @@ function showSaveStatus(msg, type) {
   clearTimeout(showSaveStatus._timer);
   showSaveStatus._timer = setTimeout(() => saveStatus.classList.add('hidden'), 4000);
 }
+
+// ---------------------------------------------------------------------------
+// 設定リセット
+// ---------------------------------------------------------------------------
+resetConfigBtn.addEventListener('click', async () => {
+  const ok = await window.__TAURI__.dialog.confirm(
+    'すべての設定内容が削除されます。本当によろしいですか？',
+    { title: '設定のリセット', kind: 'warning' }
+  );
+  if (!ok) return;
+
+  resetConfigBtn.disabled = true;
+  try {
+    await invoke('reset_config');
+    await loadConfig();
+    showSaveStatus('設定をリセットしました', 'ok');
+  } catch (e) {
+    showSaveStatus(`リセット失敗: ${e}`, 'error');
+  } finally {
+    resetConfigBtn.disabled = false;
+  }
+});
 
 // ---------------------------------------------------------------------------
 // 初期化

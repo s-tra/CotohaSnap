@@ -267,6 +267,8 @@ body {
 
 /* OSC Status Bar */
 .osc-status {
+  display: flex;
+  align-items: center;
   padding: 5px 14px;
   background: rgba(88,166,255,.12);
   border-top: 1px solid var(--accent);
@@ -274,6 +276,21 @@ body {
   font-size: 11px;
   flex-shrink: 0;
 }
+
+.osc-cancel-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  color: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+  cursor: pointer;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+.osc-cancel-btn:hover:not(:disabled) { opacity: 1; }
+.osc-cancel-btn:disabled { opacity: 0.3; cursor: default; }
 
 /* Error Bar */
 .error-bar {
@@ -438,10 +455,17 @@ select.input { cursor: pointer; appearance: none;
 .btn-primary   { background: var(--accent);  color: #0d1117; }
 .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-danger    { background: var(--danger);   color: #fff; }
+.btn-danger-hover:hover { background: var(--danger); color: #fff; border-color: var(--danger); filter: none; }
 .btn-sm { padding: 3px 8px; font-size: 11px; }
 
 .btn-group { display: flex; gap: 6px; }
 .btn-group .btn { flex: 1; }
+.btn-block { width: 100%; }
+
+.section-danger-zone {
+  border-top: 1px solid var(--danger);
+  margin-top: 8px;
+}
 
 /* =====================================================================
    Save Status

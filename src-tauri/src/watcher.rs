@@ -224,6 +224,12 @@ async fn process_screenshot(
     app_handle.emit("translation_done", &entry)?;
 
     if osc_enabled {
+        let (osc_tx, osc_rx) = tokio::sync::oneshot::channel::<()>();
+        {
+            let mut g = state.osc_cancel_sender.lock().expect("osc_cancel lock poisoned");
+            *g = Some(osc_tx);
+        }
+
         let handle = app_handle.clone();
         tokio::spawn(async move {
             // チャンク送信全体でソケットを使い回す
@@ -237,6 +243,7 @@ async fn process_screenshot(
             };
             let chunks = osc::split_for_osc(&translated_text, osc_prefix_enabled);
             let total = chunks.len();
+            let mut osc_rx = osc_rx;
             for (i, chunk) in chunks.iter().enumerate() {
                 let current = i + 1;
                 if let Err(e) = osc::send_to_chatbox(&osc_config, chunk, &socket) {
@@ -248,7 +255,14 @@ async fn process_screenshot(
                     let _ = handle.emit("osc_chunk_progress", OscChunkProgress { current, total });
                 }
                 if current < total {
-                    sleep(Duration::from_secs(chunk_interval_secs)).await;
+                    tokio::select! {
+                        _ = sleep(Duration::from_secs(chunk_interval_secs)) => {}
+                        _ = &mut osc_rx => {
+                            tracing::info!("OSC 送信がキャンセルされました ({}/{})", current, total);
+                            let _ = handle.emit("osc_cancelled", ());
+                            return;
+                        }
+                    }
                 }
             }
         });
