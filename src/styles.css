@@ -827,9 +827,9 @@ select.input {
 }
 
 .about-link-icon {
-    font-style: normal;
-    font-size: 13px;
     width: 16px;
-    text-align: center;
+    height: 16px;
     flex-shrink: 0;
+    vertical-align: middle;
+    filter: invert(1);
 }
